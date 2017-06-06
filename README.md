@@ -58,3 +58,19 @@ Working along with O'Reilly's Programming Scala 2nd Edition.
 - Compound Types
   - Type Refinements
 - Existential Types
+
+### Chapter 15 - Scala's Type System Part 1
+- Path-Dependent Types
+  - C.this
+  - C.super
+  - path.x
+- Dependent Method Types
+- Type Projections
+  - Singleton Types
+- Types for Values
+  - Tuple Types
+  - Function Types
+  - Infix Types
+- Higher-Kinded Types
+- Type Lambdas
+- Self-Recursive Types: F-Bounded Polymorphism
