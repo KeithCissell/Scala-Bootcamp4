@@ -14,7 +14,9 @@ class API extends HttpClient {
 
   def executeHttpPost(url: String, body: Map[String,String]): HttpResponse = {
     val asyncHttpClient = new DefaultAsyncHttpClient()
-    val f = asyncHttpClient.preparePost(s"$url").setBody(body.toString).execute()
+    val req = asyncHttpClient.preparePost(s"$url")
+    for ((n,v) <- body) req.addFormParam(n, v)
+    val f = req.execute()
     val r = f.get()
     asyncHttpClient.close()
     HttpResponse(r.getContentType(), r.getResponseBody(), r.getStatusCode())
@@ -32,9 +34,9 @@ class API extends HttpClient {
 object HttpPractice {
   def main(args: Array[String]) {
     val testAPI = new API
-    val getResponse = testAPI.executeHttpGet("https://www.google.com/")
-    val postResponse = testAPI.executeHttpPost("https://www.google.com/", Map("message" -> "hello world"))
-    println(getResponse.statusCode)
-    println(postResponse.statusCode)
+    val getResponse = testAPI.executeHttpGet("https://httpbin.org/get")
+    val postResponse = testAPI.executeHttpPost("https://httpbin.org/post", Map("message" -> "hello world"))
+    println(getResponse.body)
+    println(postResponse.body)
   }
 }
