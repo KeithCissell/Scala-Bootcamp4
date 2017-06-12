@@ -1,4 +1,5 @@
 // src/main/scala/modulework/99ScalaProblems.scala
+package scalaproblems
 
 object ScalaProblems {
   def main(args: Array[String]) {
