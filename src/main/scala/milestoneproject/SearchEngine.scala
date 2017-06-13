@@ -1,50 +1,79 @@
 // src/main/scala/milestoneproject/SearchEngine.scala
 package milestoneproject
+import httpclient._
 
 object SearchEngine {
   /******************************************************
   **             Search Engine Classes
   ******************************************************/
-  class User(userName: String, pass: String, history: List[Search] = Nil) {
-    val name = userName
-    private val password = pass
-    val searchHistory = history
-
-    override def toString: String = {
-      return s"${userName}'s Search History\n$searchHistory"
-    }
+  trait Repository[A] {
+    def isEmpty: Boolean
+    def contains(x: A): Boolean
+    def getAll: Seq[A]
+    def get(id: Int): Option[A]
+    def create(x: A): Unit
+    def update(x: A): Unit
+    def delete(x: A): Unit
   }
-
-  case class Search(value: String, results: List[Result] = Nil)
 
   case class Result(title: String, description: String)
 
-  def userFrequentSearch(usr: User): String = {
-    if (usr.searchHistory.isEmpty) {
-      return "No Search History"
-    } else {
-      val frequencies = for {
-        s <- usr.searchHistory
-      } yield {
-        s -> usr.searchHistory.count(_ == s)
+  case class Search(value: String, results: List[Result] = Nil)
+
+  case class SearchHistory(private var history: Seq[Search]) extends Repository[Search] {
+    def isEmpty: Boolean = history.isEmpty
+    def contains(s: Search): Boolean = history.contains(s)
+    def getAll: Seq[Search] = history
+    def get(id: Int): Option[Search] = if (id < history.length) Some(history(id)) else None
+    def create(s: Search): Unit = history = history :+ s
+    def update(s: Search): Unit = {
+      for (i <- 0 to (history.length - 1)) if (history(i).value == s.value) {
+        history = history.updated(i, s)
       }
-      val mostFrequent = frequencies.maxBy(_._2)
-      return mostFrequent._1.value
+    }
+    def delete(s: Search): Unit = history = history.filter(_ != s)
+  }
+
+  class User(val name: String, val password: String,
+      var searchHistory: SearchHistory = SearchHistory(Seq.empty)) {
+    def mostFrequentSearch: String = {
+      if (!searchHistory.isEmpty) {
+        val frequencies = for (s <- searchHistory.getAll) yield {
+          s -> searchHistory.getAll.count(_ == s)
+        }
+        frequencies.maxBy(_._2)._1.value
+      } else "No Search History"
+    }
+    override def toString: String = {
+      return s"${name}'s Search History\n$searchHistory"
     }
   }
 
-  def engineFrequentSearch(users: List[User]): String = {
-    val engineHistory = (for (usr <- users) yield usr.searchHistory).flatten
-    if (engineHistory.isEmpty) {
-      return "No Searches Found"
-    } else {
-      val frequencies = for {
-        s <- engineHistory
-      } yield {
-        s -> engineHistory.count(_ == s)
+  class UserGroup(private var users: Map[String,User]) extends Repository[User] {
+    def isEmpty: Boolean = users.isEmpty
+    def contains(id: String): Boolean = users.contains(id)
+    def getAll: Seq[User] = users.values.toSeq
+    def get(id: String): Option[User] = if (users.contains(id)) Some(users(id)) else None
+    def create(u: User): Unit = {
+      if (users.contains(u.name)) error(s"User already exists: $u.name")
+      else users = users + (u.name -> u)
+    }
+    def update(u: User): Unit = users + (u.name -> u)
+    def delete(u: User): Unit = if (users.contains(u.name)) users = users - u.name
+  }
+
+  class SearchEngine(val name: String, var users: UserGroup) {
+    def mostFrequentSearch: String = {
+      val engineHistory = (for (usr <- users.getAll) yield usr.searchHistory.getAll).flatten
+      if (engineHistory.isEmpty) {
+        return "No Searches Found"
+      } else {
+        val frequencies = for (s <- engineHistory) yield {
+          s -> engineHistory.count(_ == s)
+        }
+        val mostFrequent = frequencies.maxBy(_._2)
+        return mostFrequent._1.value
       }
-      val mostFrequent = frequencies.maxBy(_._2)
-      return mostFrequent._1.value
     }
   }
 
@@ -78,27 +107,30 @@ object SearchEngine {
     val badSearch = Search("asdfffffff", List())
 
     // Create some users
-    val Keith = new User("Keith", "StrongPassWord", List(cardinalsSearch, weatherSearch, cardinalsSearch, cardinalsSearch))
-    val Connor = new User("Connor", "SecretPhrase", List(weatherSearch, catVideoSearch, badSearch, catVideoSearch))
-    val Curly = new User("Curly", "Password123", List())
-    val Moe = new User("Moe", "Wordpass321", List(pieSearch))
-    val Larry = new User("Larry", "NyakNyakNyak", List(pieSearch, weatherSearch))
-    val Tessa = new User("Tessa", "Bookw0rm", List(weatherSearch, pieSearch, weatherSearch))
-    val Patrick = new User("Pat", "123456", List(cardinalsSearch, badSearch, cardinalsSearch, weatherSearch))
-    val Lewis = new User("LewCustom", "K7L", List(weatherSearch, pieSearch, cardinalsSearch))
-    val Tommy = new User("TomCatBolls", "art4life", List(badSearch, weatherSearch, weatherSearch))
-    val Mark = new User("Mark", "riffraff", List(cardinalsSearch, weatherSearch, pieSearch))
+    val Keith = new User("Keith", "StrongPassWord", SearchHistory(Seq(cardinalsSearch, weatherSearch, cardinalsSearch, cardinalsSearch)))
+    val Connor = new User("Connor", "SecretPhrase", SearchHistory(Seq(weatherSearch, catVideoSearch, badSearch, catVideoSearch)))
+    val Curly = new User("Curly", "Password123", SearchHistory(Seq()))
+    val Moe = new User("Moe", "Wordpass321", SearchHistory(Seq(pieSearch)))
+    val Larry = new User("Larry", "NyakNyakNyak", SearchHistory(Seq(pieSearch, weatherSearch)))
+    val Tessa = new User("Tessa", "Bookw0rm", SearchHistory(Seq(weatherSearch, pieSearch, weatherSearch)))
+    val Patrick = new User("Pat", "123456", SearchHistory(Seq(cardinalsSearch, badSearch, cardinalsSearch, weatherSearch)))
+    val Lewis = new User("LewCustom", "K7L", SearchHistory(Seq(weatherSearch, pieSearch, cardinalsSearch)))
+    val Tommy = new User("TomCatBolls", "art4life", SearchHistory(Seq(badSearch, weatherSearch, weatherSearch)))
+    val Mark = new User("Mark", "riffraff", SearchHistory(Seq(cardinalsSearch, weatherSearch, pieSearch)))
 
-    // Create a list of all the users
-    val searchEngineUsers = List(Keith, Connor, Curly, Moe, Larry, Tessa, Patrick, Lewis, Tommy, Mark)
+    // Create a SearchEngine
+    val users = Seq(Keith, Connor, Curly, Moe, Larry, Tessa, Patrick, Lewis, Tommy, Mark)
+    val userNames = users.map(u => u.name)
+    val userMap = (userNames zip users).toMap
+    val lookItUp = new SearchEngine("Look It Up", new UserGroup(userMap))
 
     // Print out info on all the users
-    //for (user <- searchEngineUsers) println(user)
+    //for (user <- lookItUp.users.getAll) println(user)
 
     // Find each user's most frequent search
-    for (user <- searchEngineUsers) println(s"${user.name}'s most frequent search: ${userFrequentSearch(user)}")
+    for (user <- lookItUp.users.getAll) println(s"${user.name}'s most frequent search: ${user.mostFrequentSearch}")
 
     // Find the most frequent search on the engine
-    println(s"The most frequent search on this engin: ${engineFrequentSearch(searchEngineUsers)}")
+    println(s"The most frequent search on this engine: ${lookItUp.mostFrequentSearch}")
   }
 }
