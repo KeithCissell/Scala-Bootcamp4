@@ -21,23 +21,27 @@ object SearchEngineSpecs extends Specification {
 
   val testSearch = Search("test", List(
     Result("test1", "this search is added, updated and then removed during testing")))
-  val testSearch2 = Search("test", List(
+  val testSearchUpdate = Search("test", List(
     Result("test2", "this is used to check if update works")))
 
-  // Create some users
+  // Create Users
   val Keith = new User("Keith", "StrongPassWord", SearchHistory(Seq(weatherSearch, cardinalsSearch, cardinalsSearch)))
   val Patrick = new User("Pat", "123456", SearchHistory(Seq(cardinalsSearch, cardinalsSearch, weatherSearch)))
   val Lewis = new User("LewCustom", "K7L")
   val Connor = new User("Conair", "wordPass")
+  val ConnorUpdate = new User("Conair", "newWordPass", SearchHistory(Seq(weatherSearch)))
 
-  // Create a list of all the users
-  val emptyUserSearches = List(Lewis, Connor)
-  val searchEngineUsers = List(Keith, Patrick, Lewis)
+  // Create UserGroups
+  val allUsers = new UserGroup(Seq(Keith, Patrick, Lewis, Connor))
+  val emptyGroup = new UserGroup(Seq())
+
+  // Create SearchEngines
+  val unpopularSearchEngine = new SearchEngine("Unpopular Engine", new UserGroup(Seq(Lewis, Connor)))
+  val popularSearchEngine = new SearchEngine("Popular Engine", allUsers)
 
   /*******************************************************
   ** Specs2 Tests
   *******************************************************/
-  // Result Tests
 
   // Search Tests
   "SearchHistory is a Repository of Searchs that" should {
@@ -58,35 +62,64 @@ object SearchEngineSpecs extends Specification {
     "Add a new Search to the history" in {
       Keith.searchHistory.getAll == Seq(weatherSearch, cardinalsSearch, cardinalsSearch, testSearch)
     }
-    step(Keith.searchHistory.update(testSearch2))
+    step(Keith.searchHistory.update(testSearchUpdate))
     "Update Searches in the history" in {
-      (!Keith.searchHistory.contains(testSearch)) && (Keith.searchHistory.contains(testSearch2))
+      (!Keith.searchHistory.contains(testSearch)) && (Keith.searchHistory.contains(testSearchUpdate))
     }
-    step(Keith.searchHistory.delete(testSearch2))
+    step(Keith.searchHistory.delete(testSearchUpdate))
     "Delete searches from the history" in {
-      !Keith.searchHistory.contains(testSearch2)
+      !Keith.searchHistory.contains(testSearchUpdate)
     }
   }
 
   // User Tests
   "User.frequentSearch" should {
+
     "Properly handle User with no search history" in {
-      Lewis.frequentSearch === "No Search History"
+      Lewis.mostFrequentSearch === "No Search History"
     }
     "Find the User's most frequent search" in {
-      Keith.frequentSearch === "Cardinals"
+      Keith.mostFrequentSearch === "Cardinals"
     }
   }
 
-// SearchEngine Tests
+  // UserGroup Tests
+  "UserGroup is a Repository of Users that" should {
+
+    "Check if empty" in {
+      (!allUsers.isEmpty) && (emptyGroup.isEmpty)
+    }
+    "Check if group contains a User" in {
+      allUsers.contains(Keith)
+    }
+    "Return a Seq of all User elements" in {
+      allUsers.getAll == Seq(Keith, Patrick, Lewis, Connor)
+    }
+    "Get a User by their name" in {
+      (allUsers.get("Keith") == Some(Keith)) && (emptyGroup.get("Keith") == None)
+    }
+    step(emptyGroup.create(Connor))
+    "Add a new User to the group" in {
+      emptyGroup.getAll == Seq(Connor)
+    }
+    step(emptyGroup.update(ConnorUpdate))
+    "Update User in the group" in {
+      !(emptyGroup.getAll == Seq(Connor)) && (emptyGroup.getAll == Seq(ConnorUpdate))
+    }
+    step(emptyGroup.delete(ConnorUpdate))
+    "Delete User from the group" in {
+      !emptyGroup.contains(ConnorUpdate)
+    }
+  }
+
+  // SearchEngine Tests
   "engineFrequentSearch takes a list of Users and looks all their searchHistory fields" should {
 
     "Properly handle a list that yeilds no search history" in {
-      engineFrequentSearch(emptyUserSearches) === "No Searches Found"
+      unpopularSearchEngine.mostFrequentSearch === "No Searches Found"
     }
-
     "Find the most frequent search across all Users" in {
-      engineFrequentSearch(searchEngineUsers) === "Cardinals"
+      popularSearchEngine.mostFrequentSearch === "Cardinals"
     }
   }
 }
