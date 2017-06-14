@@ -73,13 +73,11 @@ object SearchEngineSpecs extends Specification {
   }
 
   // User Tests
-  "User.frequentSearch" should {
+  "User holds an identity and searchHistory and" should {
 
-    "Properly handle User with no search history" in {
-      Lewis.mostFrequentSearch === "No Search History"
-    }
     "Find the User's most frequent search" in {
-      Keith.mostFrequentSearch === "Cardinals"
+      (Lewis.mostFrequentSearch === "No Search History") &&
+      (Keith.mostFrequentSearch === "Cardinals")
     }
   }
 
@@ -104,7 +102,7 @@ object SearchEngineSpecs extends Specification {
     }
     step(emptyGroup.update(ConnorUpdate))
     "Update User in the group" in {
-      !(emptyGroup.getAll == Seq(Connor)) && (emptyGroup.getAll == Seq(ConnorUpdate))
+      (emptyGroup.getAll == Seq(ConnorUpdate))
     }
     step(emptyGroup.delete(ConnorUpdate))
     "Delete User from the group" in {
@@ -113,13 +111,11 @@ object SearchEngineSpecs extends Specification {
   }
 
   // SearchEngine Tests
-  "engineFrequentSearch takes a list of Users and looks all their searchHistory fields" should {
+  "SearchEngine holds a UserGroup that" should {
 
-    "Properly handle a list that yeilds no search history" in {
-      unpopularSearchEngine.mostFrequentSearch === "No Searches Found"
-    }
-    "Find the most frequent search across all Users" in {
-      popularSearchEngine.mostFrequentSearch === "Cardinals"
+    "Find the SearchEngine's most frequent search" in {
+      (unpopularSearchEngine.mostFrequentSearch === "No Searches Found") &&
+      (popularSearchEngine.mostFrequentSearch === "Cardinals")
     }
   }
 }
