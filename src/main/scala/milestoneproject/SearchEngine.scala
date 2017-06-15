@@ -1,6 +1,5 @@
 // src/main/scala/milestoneproject/SearchEngine.scala
-package milestoneproject
-//import httpclient.HttpClient._
+package searchengine
 import httpclient.DuckDuckGo._
 
 object SearchEngine {

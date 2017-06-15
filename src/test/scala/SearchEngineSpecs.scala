@@ -1,7 +1,7 @@
 // src/test/scala/SearchEngineSpecs.scala
 package milestoneproject
 import httpclient.HttpClient._
-import milestoneproject.SearchEngine._
+import searchengine.SearchEngine._
 import org.specs2.mutable.Specification
 import org.specs2.specification._
 

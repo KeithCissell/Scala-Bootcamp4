@@ -1,7 +1,7 @@
 // src/main/scala/modulework/Http-Client/DuckDuckGo.scala
 package httpclient
 import httpclient.HttpClient._
-import milestoneproject.SearchEngine._
+import searchengine.SearchEngine._
 import org.json4s._
 import org.json4s.jackson.JsonMethods._
 import scala.util.matching.Regex
