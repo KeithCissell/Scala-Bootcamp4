@@ -13,7 +13,7 @@ object HttpClient{
     def executeHttpGet(url: String): HttpResponse
   }
 
-  class API extends HttpClient {
+  trait API extends HttpClient {
 
     def executeHttpPost(url: String, body: Map[String,String]): HttpResponse = {
       // Make request
@@ -25,14 +25,17 @@ object HttpClient{
       asyncHttpClient.close()
 
       // Build custom HttpResponse
-      val hMap: Map[String, String] = if (r.hasResponseHeaders()) {
-        val names = r.getHeaders().names().toList
-        val values = names.map(n => r.getHeaders().get(n))
-        (names zip values).toMap
-      } else Map()
-      val b = if (r.hasResponseBody()) r.getResponseBody() else ""
-      val s = if (r.hasResponseStatus()) r.getStatusCode() else 0
-      HttpResponse(hMap, b, s)
+      if (r.getStatusCode != 200) error(s"Failed to Post to: $url")
+      else {
+        val hMap: Map[String, String] = if (r.hasResponseHeaders()) {
+          val names = r.getHeaders().names().toList
+          val values = names.map(n => r.getHeaders().get(n))
+          (names zip values).toMap
+        } else Map()
+        val b = if (r.hasResponseBody()) r.getResponseBody() else ""
+        val s = if (r.hasResponseStatus()) r.getStatusCode() else 0
+        HttpResponse(hMap, b, s)
+      }
     }
 
     def executeHttpGet(url: String): HttpResponse = {
@@ -43,14 +46,17 @@ object HttpClient{
       asyncHttpClient.close()
 
       // Build custom HttpResponse
-      val hMap: Map[String, String] = if (r.hasResponseHeaders()) {
-        val names = r.getHeaders().names().toList
-        val values = names.map(n => r.getHeaders().get(n))
-        (names zip values).toMap
-      } else Map()
-      val b = if (r.hasResponseBody()) r.getResponseBody() else ""
-      val s = if (r.hasResponseStatus()) r.getStatusCode() else 0
-      HttpResponse(hMap, b, s)
+      if (r.getStatusCode != 200) error(s"Failed to Get: $url")
+      else {
+        val hMap: Map[String, String] = if (r.hasResponseHeaders()) {
+          val names = r.getHeaders().names().toList
+          val values = names.map(n => r.getHeaders().get(n))
+          (names zip values).toMap
+        } else Map()
+        val b = if (r.hasResponseBody()) r.getResponseBody() else ""
+        val s = if (r.hasResponseStatus()) r.getStatusCode() else 0
+        HttpResponse(hMap, b, s)
+      }
     }
   }
 

@@ -1,6 +1,7 @@
 // src/main/scala/milestoneproject/SearchEngine.scala
 package milestoneproject
-import httpclient.HttpClient._
+//import httpclient.HttpClient._
+import httpclient.DuckDuckGo._
 
 object SearchEngine {
   // A general list of methods to be used by a repository
@@ -18,10 +19,11 @@ object SearchEngine {
   case class Result(title: String, description: String)
 
   // Holds the term searched and a list of results returned
-  case class Search(value: String, results: List[Result] = Nil)
+  case class Search(value: String, results: Seq[Result] = Seq.empty)
 
   // A list of searches that can be viewed and manipulated
-  case class SearchHistory(private var history: Seq[Search]) extends Repository[Search,Int] {
+  case class SearchHistory(private var history: Seq[Search] = Seq.empty)
+      extends Repository[Search,Int] {
     def isEmpty: Boolean = history.isEmpty
     def contains(s: Search): Boolean = history.contains(s)
     def getAll: Seq[Search] = history
@@ -37,7 +39,7 @@ object SearchEngine {
 
   // A search engine user that holds their name, password and search history
   class User(val name: String, val password: String,
-      var searchHistory: SearchHistory = SearchHistory(Seq.empty)) {
+      var searchHistory: SearchHistory = SearchHistory()) {
     def mostFrequentSearch: String = {
       if (!searchHistory.isEmpty) {
         val frequencies = for (s <- searchHistory.getAll) yield {
@@ -52,7 +54,7 @@ object SearchEngine {
   }
 
   // A group of search engine users
-  class UserGroup(private var users: Map[String,User]) extends Repository[User,String] {
+  class UserGroup(private var users: Map[String,User] = Map.empty) extends Repository[User,String] {
     // Allows UserGroup to be constructed with a Seq of users
     def this(users: Seq[User]) {
       this((users.map(u => u.name) zip users).toMap)
@@ -70,10 +72,9 @@ object SearchEngine {
   }
 
   // A search engine that holds a UserGroup and allows them to make searches
-  class SearchEngine(val name: String, var users: UserGroup) extends API {
-    def search: HttpResponse = executeHttpGet("https://httpbin.org/get")
+  class SearchEngine(val name: String, var userGroup: UserGroup = new UserGroup()) {
     def engineSearchHistory: Seq[Search] = {
-      (for (usr <- users.getAll) yield usr.searchHistory.getAll).flatten
+      (for (usr <- userGroup.getAll) yield usr.searchHistory.getAll).flatten
     }
     def mostFrequentSearch: String = {
       val history = engineSearchHistory
