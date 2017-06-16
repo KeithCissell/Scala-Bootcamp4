@@ -16,47 +16,33 @@ object HttpClient{
   trait API extends HttpClient {
 
     def executeHttpPost(url: String, body: Map[String,String]): HttpResponse = {
-      // Make request
       val asyncHttpClient = new DefaultAsyncHttpClient()
-      val req = asyncHttpClient.preparePost(s"$url")
-      for ((n,v) <- body) req.addFormParam(n, v)
-      val f = req.execute()
-      val r = f.get()
+      val request = asyncHttpClient.preparePost(s"$url")
+      for ((n,v) <- body) request.addFormParam(n, v)
+      val response = request.execute().get()
       asyncHttpClient.close()
-
-      // Build custom HttpResponse
-      if (r.getStatusCode != 200) error(s"Failed to Post to: $url")
-      else {
-        val hMap: Map[String, String] = if (r.hasResponseHeaders()) {
-          val names = r.getHeaders().names().toList
-          val values = names.map(n => r.getHeaders().get(n))
-          (names zip values).toMap
-        } else Map()
-        val b = if (r.hasResponseBody()) r.getResponseBody() else ""
-        val s = if (r.hasResponseStatus()) r.getStatusCode() else 0
-        HttpResponse(hMap, b, s)
-      }
+      if (response.getStatusCode != 200) error(s"Failed to Post to: $url")
+      else formatResponse(response)
     }
 
     def executeHttpGet(url: String): HttpResponse = {
-      // Make request
       val asyncHttpClient = new DefaultAsyncHttpClient()
-      val f = asyncHttpClient.prepareGet(s"$url").execute()
-      val r = f.get()
+      val request = asyncHttpClient.prepareGet(s"$url")
+      val response = request.execute().get()
       asyncHttpClient.close()
+      if (response.getStatusCode != 200) error(s"Failed to Get: $url")
+      else formatResponse(response)
+    }
 
-      // Build custom HttpResponse
-      if (r.getStatusCode != 200) error(s"Failed to Get: $url")
-      else {
-        val hMap: Map[String, String] = if (r.hasResponseHeaders()) {
-          val names = r.getHeaders().names().toList
-          val values = names.map(n => r.getHeaders().get(n))
-          (names zip values).toMap
-        } else Map()
-        val b = if (r.hasResponseBody()) r.getResponseBody() else ""
-        val s = if (r.hasResponseStatus()) r.getStatusCode() else 0
-        HttpResponse(hMap, b, s)
-      }
+    def formatResponse(r: Response): HttpResponse = {
+      val hMap: Map[String, String] = if (r.hasResponseHeaders()) {
+        val names = r.getHeaders().names().toList
+        val values = names.map(n => r.getHeaders().get(n))
+        (names zip values).toMap
+      } else Map()
+      val b = if (r.hasResponseBody()) r.getResponseBody() else ""
+      val s = if (r.hasResponseStatus()) r.getStatusCode() else 0
+      HttpResponse(hMap, b, s)
     }
   }
 

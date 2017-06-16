@@ -9,9 +9,7 @@ import scala.util.matching.Regex
 object DuckDuckGo {
 
   trait DuckDuckGoAPI extends API {
-    // Retrieve a page
-
-    // Make a search
+    // Make a search through DuckDuckGo's Instant Response API
     def searchDDG(query: String): Search = {
       val requestBody = Map("q" -> s"$query", "format" -> "json")
       val response = executeHttpPost("https://duckduckgo.com", requestBody)
@@ -19,7 +17,7 @@ object DuckDuckGo {
       Search(query, results)
     }
 
-    // Search Result Formatting
+    // Extract results from the returned Json data
     def extractResults(json: String): Seq[Result] = {
       val obj = parse(json)
       for {
@@ -27,6 +25,8 @@ object DuckDuckGo {
         JField("Result", JString(result)) <- field
       } yield formatResult(result)
     }
+
+    // Format result string into proper Result instance
     def formatResult(result: String): Result = {
       val split = result.split(">")
       val title = split(1).dropRight(3)

@@ -58,7 +58,7 @@ object LookItUpMockRun {
 
     // Make a search
     println(Curly)
-    LookItUp.userSearch(Curly, "testing")
+    LookItUp.userSearch(Curly.name, "testing")
     println(Curly)
   }
 }

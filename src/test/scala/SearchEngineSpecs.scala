@@ -2,12 +2,13 @@
 package milestoneproject
 import httpclient.HttpClient._
 import searchengine.SearchEngine._
-import org.specs2.mutable.Specification
+import milestoneproject.LookItUp._
 import org.specs2.specification._
+import org.specs2.mutable.Specification
 
 object SearchEngineSpecs extends Specification {
   /*******************************************************
-  ** Create data to test on
+  ** Create data to test with
   *******************************************************/
   // Make some searches and fill them with results
   val weatherSearch = Search("Weather", Seq(
@@ -19,9 +20,11 @@ object SearchEngineSpecs extends Specification {
     Result("MLB Network", "Cardinals vs. Orioles: Live Score Updates"))
   )
   val testSearch = Search("test", Seq(
-    Result("test1", "this search is added, updated and then removed during testing")))
+    Result("test1", "this search is added, updated and then removed during testing"))
+  )
   val testSearchUpdate = Search("test", Seq(
-    Result("test2", "this is used to check if update works")))
+    Result("test2", "this is used to check if update works"))
+  )
 
   // Create Users
   val Keith = new User("Keith", "StrongPassWord", SearchHistory(Seq(weatherSearch, cardinalsSearch, cardinalsSearch)))
@@ -39,13 +42,17 @@ object SearchEngineSpecs extends Specification {
   val postTestURL = "https://httpbin.org/post"
   val postMap = Map("message" -> "hello", "from" -> "keith", "to" -> "world")
 
-  // Create an API
+  // Create API
   class TestAPI extends API
   val testAPI = new TestAPI
 
   // Create SearchEngines
   val unpopularSearchEngine = new SearchEngine("Unpopular Engine", new UserGroup(Seq(Lewis, Connor)))
+  val smallSearchEngine = new SearchEngine("Small Engine", new UserGroup(Seq(ConnorUpdate)))
   val popularSearchEngine = new SearchEngine("Popular Engine", allUsers)
+
+  // Create LookItUp Engine
+  val LookItUp = new LookItUp(new UserGroup(Seq(Lewis)))
 
 
   /*******************************************************
@@ -53,7 +60,7 @@ object SearchEngineSpecs extends Specification {
   *******************************************************/
 
   // Search Tests
-  "SearchHistory is a Repository of Searchs that" should {
+  "\nSearchHistory is a Repository of Searchs that" should {
 
     "Check if empty" in {
       (!Keith.searchHistory.isEmpty) && (Lewis.searchHistory.isEmpty)
@@ -82,22 +89,26 @@ object SearchEngineSpecs extends Specification {
   }
 
   // User Tests
-  "User holds an identity and searchHistory and" should {
+  "\nUser holds an identity and searchHistory and" should {
 
     "Find the User's most frequent search" in {
       (Lewis.mostFrequentSearch === "No Search History") &&
       (Keith.mostFrequentSearch === "Cardinals")
     }
+    "Properly formats a string" in {
+      (ConnorUpdate.toString == s"Conair's Search History\n${SearchHistory(Seq(weatherSearch))}") &&
+      (Connor.toString == "Conair's Search History\nEmpty")
+    }
   }
 
   // UserGroup Tests
-  "UserGroup is a Repository of Users that" should {
+  "\nUserGroup is a Repository of Users that" should {
 
     "Check if empty" in {
       (!allUsers.isEmpty) && (emptyGroup.isEmpty)
     }
     "Check if group contains a User" in {
-      allUsers.contains(Keith)
+      allUsers.contains(Keith.name)
     }
     "Return a Seq of all User elements" in {
       allUsers.getAll == Seq(Keith, Patrick, Lewis, Connor)
@@ -115,13 +126,16 @@ object SearchEngineSpecs extends Specification {
     }
     step(emptyGroup.delete(ConnorUpdate))
     "Delete User from the group" in {
-      !emptyGroup.contains(ConnorUpdate)
+      !emptyGroup.contains(ConnorUpdate.name)
     }
   }
 
   // SearchEngine Tests
-  "SearchEngine holds a UserGroup that" should {
+  "\nSearchEngine holds a UserGroup that" should {
 
+    "Return search history from all users" in {
+      smallSearchEngine.engineSearchHistory == Seq(weatherSearch)
+    }
     "Find the SearchEngine's most frequent search" in {
       (unpopularSearchEngine.mostFrequentSearch === "No Searches Found") &&
       (popularSearchEngine.mostFrequentSearch === "Cardinals")
@@ -129,13 +143,22 @@ object SearchEngineSpecs extends Specification {
   }
 
   // API Tests
-  "API allows use of HTTP Client functions that" should {
+  "\nAPI allows use of HTTP Client functions that" should {
 
     "Successfully make a Get request" in {
       testAPI.executeHttpGet(getTestURL).statusCode == 200
     }
     "Successfully make a Post request" in {
       testAPI.executeHttpPost(postTestURL, postMap).statusCode == 200
+    }
+  }
+
+  // Look It Up Tests
+  "\nLookItUp extends searcha engine with a DuckDuckGo API and" should {
+
+    step(LookItUp.userSearch(Lewis.name, "test"))
+    "userSearch makes a search on DDG and adds it to the user's history" in {
+      !LookItUp.engineSearchHistory.isEmpty
     }
   }
 }

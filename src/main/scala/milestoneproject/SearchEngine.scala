@@ -6,7 +6,6 @@ object SearchEngine {
   // A general list of methods to be used by a repository
   trait Repository[A, I] {
     def isEmpty: Boolean
-    def contains(x: A): Boolean
     def getAll: Seq[A]
     def get(id: I): Option[A]
     def create(x: A): Unit
@@ -17,7 +16,7 @@ object SearchEngine {
   // Holds the title and brief description of an search result
   case class Result(title: String, description: String)
 
-  // Holds the term searched and a list of results returned
+  // Holds the query searched and a list of results returned
   case class Search(value: String, results: Seq[Result] = Seq.empty)
 
   // A list of searches that can be viewed and manipulated
@@ -36,7 +35,7 @@ object SearchEngine {
     def delete(s: Search): Unit = history = history.filter(_ != s)
   }
 
-  // A search engine user that holds their name, password and search history
+  // A search engine user that holds name, password and search history
   class User(val name: String, val password: String,
       var searchHistory: SearchHistory = SearchHistory()) {
     def mostFrequentSearch: String = {
@@ -48,7 +47,8 @@ object SearchEngine {
       } else "No Search History"
     }
     override def toString: String = {
-      return s"${name}'s Search History\n$searchHistory"
+      if (searchHistory.isEmpty) s"${name}'s Search History\nEmpty"
+      else s"${name}'s Search History\n$searchHistory"
     }
   }
 
@@ -59,7 +59,7 @@ object SearchEngine {
       this((users.map(u => u.name) zip users).toMap)
     }
     def isEmpty: Boolean = users.isEmpty
-    def contains(u: User): Boolean = users.contains(u.name)
+    def contains(id: String): Boolean = users.contains(id)
     def getAll: Seq[User] = users.values.toSeq
     def get(id: String): Option[User] = if (users.contains(id)) Some(users(id)) else None
     def create(u: User): Unit = {
@@ -70,7 +70,7 @@ object SearchEngine {
     def delete(u: User): Unit = if (users.contains(u.name)) users = users - u.name
   }
 
-  // A search engine that holds a UserGroup and allows them to make searches
+  // A search engine that holds a UserGroup
   class SearchEngine(val name: String, var userGroup: UserGroup = new UserGroup()) {
     def engineSearchHistory: Seq[Search] = {
       (for (usr <- userGroup.getAll) yield usr.searchHistory.getAll).flatten
